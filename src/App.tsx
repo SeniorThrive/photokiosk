@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Camera, Heart, Share2, Settings, Bell, ArrowLeft, Plus, Check, X, ZoomIn, Users, Shield, Wifi, WifiOff, MessageCircle, ChevronRight, Upload, Link, Stethoscope } from 'lucide-react';
+import { Camera, Heart, Share2, Settings, Bell, ArrowLeft, Plus, Check, X, ZoomIn, Users, Shield, Wifi, WifiOff, MessageCircle, ChevronRight, Upload, Link, UserCheck } from 'lucide-react';
 
 interface Photo {
   id: string;
@@ -14,10 +14,11 @@ interface SharedPhoto {
   alt: string;
   note: string;
   sender: string;
-  senderType: 'family' | 'caregiver';
   timestamp: Date;
   liked?: boolean;
   seen?: boolean;
+  source?: 'family' | 'caregiver';
+  seniorResponse?: string;
 }
 
 const mockPhotos: Photo[] = [
@@ -36,10 +37,10 @@ const mockSharedPhotos: SharedPhoto[] = [
     alt: 'Garden flowers',
     note: 'Hope this brightens your day! The roses are blooming beautifully this spring.',
     sender: 'Sarah',
-    senderType: 'family',
     timestamp: new Date(Date.now() - 1000 * 60 * 30),
     liked: false,
-    seen: false
+    seen: false,
+    source: 'family'
   },
   {
     id: '2',
@@ -47,10 +48,11 @@ const mockSharedPhotos: SharedPhoto[] = [
     alt: 'Family dinner',
     note: 'Missing you at dinner tonight. The kids were asking about your famous apple pie recipe!',
     sender: 'Michael',
-    senderType: 'family',
     timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2),
     liked: true,
-    seen: true
+    seen: true,
+    source: 'family',
+    seniorResponse: 'Thank you!'
   },
   {
     id: '3',
@@ -58,21 +60,21 @@ const mockSharedPhotos: SharedPhoto[] = [
     alt: 'Sunset walk',
     note: 'Took this during my evening walk and thought of our walks together. Love you!',
     sender: 'Emma',
-    senderType: 'family',
     timestamp: new Date(Date.now() - 1000 * 60 * 60 * 4),
     liked: false,
-    seen: true
+    seen: true,
+    source: 'family'
   },
   {
     id: '4',
-    src: 'https://images.pexels.com/photos/1181317/pexels-photo-1181317.jpeg?auto=compress&cs=tinysrgb&w=400',
-    alt: 'Morning medication check',
-    note: 'Everything looks great today! Blood pressure is normal and spirits are high. Had a wonderful chat about the garden.',
+    src: 'https://images.pexels.com/photos/1144176/pexels-photo-1144176.jpeg?auto=compress&cs=tinysrgb&w=400',
+    alt: 'Daily check-in',
+    note: 'Had a wonderful visit today! Your mom was in great spirits and we enjoyed tea together.',
     sender: 'Nurse Jennifer',
-    senderType: 'caregiver',
     timestamp: new Date(Date.now() - 1000 * 60 * 60 * 6),
     liked: false,
-    seen: false
+    seen: false,
+    source: 'caregiver'
   }
 ];
 
@@ -93,7 +95,7 @@ const formatTimeAgo = (date: Date) => {
 };
 
 function App() {
-  const [currentView, setCurrentView] = useState<'senior-hub' | 'family-hub' | 'caregiver-hub' | 'photo-feed' | 'share-photos' | 'photo-detail' | 'settings' | 'connect-photos'>('senior-hub');
+  const [currentView, setCurrentView] = useState<'senior-hub' | 'family-hub' | 'photo-feed' | 'share-photos' | 'photo-detail' | 'settings' | 'connect-photos'>('senior-hub');
   const [selectedPhotos, setSelectedPhotos] = useState<Photo[]>([]);
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [shareNote, setShareNote] = useState('');
@@ -102,13 +104,14 @@ function App() {
   const [isOnline, setIsOnline] = useState(true);
   const [notifications, setNotifications] = useState(2);
   const [selectedPhoto, setSelectedPhoto] = useState<SharedPhoto | null>(null);
-  const [userType, setUserType] = useState<'senior' | 'family' | 'caregiver'>('senior');
-  const [monthlyUploads, setMonthlyUploads] = useState(7);
+  const [userType, setUserType] = useState<'senior' | 'family'>('senior');
+  const [monthlyUploads, setMonthlyUploads] = useState(7); // 7 out of 10 used
   const [connectionType, setConnectionType] = useState<'none' | 'google' | 'apple' | 'upload'>('none');
 
   useEffect(() => {
+    // Simulate network status
     const interval = setInterval(() => {
-      setIsOnline(Math.random() > 0.1);
+      setIsOnline(Math.random() > 0.1); // 90% online
     }, 10000);
     return () => clearInterval(interval);
   }, []);
@@ -125,6 +128,7 @@ function App() {
     if (isSelected) {
       setSelectedPhotos(prev => prev.filter(p => p.id !== photo.id));
     } else if (connectionType === 'upload' && selectedPhotos.length >= monthlyUploads) {
+      // Only limit for upload, not for Google/Apple
       return;
     } else {
       setSelectedPhotos(prev => [...prev, photo]);
@@ -135,11 +139,11 @@ function App() {
     const newSharedPhotos = selectedPhotos.map(photo => ({
       ...photo,
       note: shareNote || 'Sharing this special moment with you',
-      sender: userType === 'caregiver' ? 'Care Team' : 'You',
-      senderType: userType === 'caregiver' ? 'caregiver' as const : 'family' as const,
+      sender: 'You',
       timestamp: new Date(),
       liked: false,
-      seen: false
+      seen: false,
+      source: 'family' as const
     }));
     
     setSharedPhotos(prev => [...newSharedPhotos, ...prev]);
@@ -148,7 +152,7 @@ function App() {
     }
     setSelectedPhotos([]);
     setShareNote('');
-    setCurrentView(userType === 'caregiver' ? 'caregiver-hub' : userType === 'family' ? 'family-hub' : 'senior-hub');
+    setCurrentView('senior-hub');
   };
 
   const likePhoto = (photoId: string) => {
@@ -163,10 +167,16 @@ function App() {
     ));
   };
 
+  const handleSeniorResponse = (photoId: string, response: string) => {
+    setSharedPhotos(prev => prev.map(photo => 
+      photo.id === photoId ? { ...photo, seniorResponse: response } : photo
+    ));
+  };
+
   // SENIOR USER VIEWS
   if (currentView === 'senior-hub') {
     const unseenPhotos = sharedPhotos.filter(photo => !photo.seen);
-    const recentPhotos = sharedPhotos.slice(0, 3);
+    const displayedPhotos = sharedPhotos;
 
     return (
       <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-50">
@@ -197,20 +207,28 @@ function App() {
 
         {/* Main Content */}
         <div className="max-w-6xl mx-auto px-6 py-8">
+          {/* New Photos Alert */}
+          {unseenPhotos.length > 0 && (
+            <div className="mb-8 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-3xl p-8 text-white shadow-xl">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-6">
+                  <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center">
+                    <Bell className="w-8 h-8" />
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-bold mb-2">New Photos Just Arrived!</h3>
+                    <p className="text-blue-100 text-lg">Your family shared {unseenPhotos.length} special moment{unseenPhotos.length > 1 ? 's' : ''} with you</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Family Photos Preview - Takes up 2/3 of the space */}
             <div className="lg:col-span-2">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-3xl font-bold text-gray-900">Your Family Photos</h2>
-                {sharedPhotos.length > 3 && (
-                  <button
-                    onClick={() => setCurrentView('photo-feed')}
-                    className="text-orange-600 hover:text-orange-700 font-bold text-lg flex items-center space-x-2"
-                  >
-                    <span>See All</span>
-                    <ChevronRight className="w-5 h-5" />
-                  </button>
-                )}
               </div>
 
               {sharedPhotos.length === 0 ? (
@@ -223,18 +241,18 @@ function App() {
                 </div>
               ) : (
                 <div className="space-y-6">
-                  {recentPhotos.map((photo: SharedPhoto) => (
+                  {displayedPhotos.map((photo: SharedPhoto) => (
                     <div key={photo.id} className="bg-white rounded-3xl shadow-lg overflow-hidden border border-gray-100 hover:shadow-xl transition-shadow">
                       <div className="p-6">
                         <div className="flex items-center justify-between mb-4">
                           <div className="flex items-center space-x-3">
                             <div className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg ${
-                              photo.senderType === 'caregiver' 
-                                ? 'bg-gradient-to-r from-teal-500 to-cyan-600' 
+                              photo.source === 'caregiver' 
+                                ? 'bg-gradient-to-r from-green-500 to-emerald-600' 
                                 : 'bg-gradient-to-r from-blue-500 to-indigo-600'
                             }`}>
-                              {photo.senderType === 'caregiver' ? (
-                                <Stethoscope className="w-6 h-6 text-white" />
+                              {photo.source === 'caregiver' ? (
+                                <UserCheck className="w-6 h-6 text-white" />
                               ) : (
                                 <span className="text-white font-bold text-lg">
                                   {photo.sender[0]}
@@ -244,13 +262,11 @@ function App() {
                             <div>
                               <div className="flex items-center space-x-2">
                                 <div className="font-bold text-gray-900 text-lg">{photo.sender}</div>
-                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                  photo.senderType === 'caregiver' 
-                                    ? 'bg-teal-100 text-teal-800' 
-                                    : 'bg-blue-100 text-blue-800'
-                                }`}>
-                                  {photo.senderType === 'caregiver' ? 'Caregiver' : 'Family'}
-                                </span>
+                                {photo.source === 'caregiver' && (
+                                  <span className="bg-green-100 text-green-800 text-xs font-bold px-2 py-1 rounded-full">
+                                    Caregiver Visit
+                                  </span>
+                                )}
                               </div>
                               <div className="text-gray-500">{formatTimeAgo(photo.timestamp)}</div>
                             </div>
@@ -279,31 +295,55 @@ function App() {
                         </div>
                         
                         {photo.note && (
-                          <div className={`rounded-2xl p-4 mb-4 border ${
-                            photo.senderType === 'caregiver' 
-                              ? 'bg-teal-50 border-teal-100' 
-                              : 'bg-amber-50 border-amber-100'
-                          }`}>
+                          <div className="bg-amber-50 rounded-2xl p-4 mb-4 border border-amber-100">
                             <div className="flex items-start space-x-3">
-                              <MessageCircle className={`w-5 h-5 mt-1 flex-shrink-0 ${
-                                photo.senderType === 'caregiver' ? 'text-teal-600' : 'text-amber-600'
-                              }`} />
+                              <MessageCircle className="w-5 h-5 text-amber-600 mt-1 flex-shrink-0" />
                               <p className="text-gray-700 leading-relaxed">{photo.note}</p>
                             </div>
                           </div>
                         )}
+
+                        {photo.seniorResponse && (
+                          <div className="bg-blue-50 rounded-2xl p-4 mb-4 border border-blue-100">
+                            <div className="flex items-start space-x-3">
+                              <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
+                                <span className="text-white text-xs font-bold">You</span>
+                              </div>
+                              <p className="text-blue-800 leading-relaxed font-medium">{photo.seniorResponse}</p>
+                            </div>
+                          </div>
+                        )}
                         
-                        <button
-                          onClick={() => likePhoto(photo.id)}
-                          className={`flex items-center space-x-2 px-6 py-3 rounded-2xl transition-all duration-200 font-bold shadow-lg ${
-                            photo.liked
-                              ? 'bg-red-50 text-red-600 hover:bg-red-100 border-2 border-red-200'
-                              : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border-2 border-gray-200'
-                          }`}
-                        >
-                          <Heart className={`w-6 h-6 ${photo.liked ? 'fill-current' : ''}`} />
-                          <span>{photo.liked ? 'Loved!' : 'Love This'}</span>
-                        </button>
+                        <div className="flex items-center space-x-4">
+                          <button
+                            onClick={() => likePhoto(photo.id)}
+                            className={`flex items-center space-x-2 px-6 py-3 rounded-2xl transition-all duration-200 font-bold shadow-lg ${
+                              photo.liked
+                                ? 'bg-red-50 text-red-600 hover:bg-red-100 border-2 border-red-200'
+                                : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border-2 border-gray-200'
+                            }`}
+                          >
+                            <Heart className={`w-6 h-6 ${photo.liked ? 'fill-current' : ''}`} />
+                            <span>{photo.liked ? 'Loved!' : 'Love This'}</span>
+                          </button>
+
+                          {!photo.seniorResponse && (
+                            <div className="flex items-center space-x-2">
+                              <button
+                                onClick={() => handleSeniorResponse(photo.id, 'Thank you!')}
+                                className="px-4 py-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-xl font-medium transition-colors border border-blue-200"
+                              >
+                                Thank you!
+                              </button>
+                              <button
+                                onClick={() => handleSeniorResponse(photo.id, 'Thinking of you!')}
+                                className="px-4 py-2 bg-purple-50 text-purple-600 hover:bg-purple-100 rounded-xl font-medium transition-colors border border-purple-200"
+                              >
+                                Thinking of you!
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -328,28 +368,6 @@ function App() {
                   >
                     Share Photos
                   </button>
-
-                  {/* New Photos Alert - Moved here */}
-                  {unseenPhotos.length > 0 && (
-                    <div className="mt-8 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl p-6 text-white shadow-lg">
-                      <div className="text-center">
-                        <Bell className="w-8 h-8 mx-auto mb-3" />
-                        <h3 className="text-lg font-bold mb-2">New Photos!</h3>
-                        <p className="text-blue-100 text-sm mb-4">
-                          {unseenPhotos.length} new photo{unseenPhotos.length > 1 ? 's' : ''} from your family
-                        </p>
-                        <button
-                          onClick={() => {
-                            setCurrentView('photo-feed');
-                            setNotifications(0);
-                          }}
-                          className="bg-white/20 hover:bg-white/30 text-white px-4 py-2 rounded-xl font-bold text-sm transition-all"
-                        >
-                          View All
-                        </button>
-                      </div>
-                    </div>
-                  )}
 
                   {/* Connection Status */}
                   {isConnected && (
@@ -390,219 +408,18 @@ function App() {
               </div>
 
               {/* User Type Switcher (for demo purposes) */}
-              <div className="mt-8 text-center space-y-2">
+              <div className="mt-8 text-center">
                 <button
                   onClick={() => {
                     setUserType('family');
                     setCurrentView('family-hub');
                   }}
-                  className="block text-orange-600 hover:text-orange-700 font-medium text-lg underline"
+                  className="text-orange-600 hover:text-orange-700 font-medium text-lg underline"
                 >
                   Switch to Family Member View
                 </button>
-                <button
-                  onClick={() => {
-                    setUserType('caregiver');
-                    setCurrentView('caregiver-hub');
-                  }}
-                  className="block text-teal-600 hover:text-teal-700 font-medium text-lg underline"
-                >
-                  Switch to Caregiver View
-                </button>
               </div>
             </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (currentView === 'family-hub') {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-50">
-        {/* Header */}
-        <div className="bg-white shadow-sm border-b border-gray-100">
-          <div className="max-w-4xl mx-auto px-6 py-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <div className="w-14 h-14 bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl flex items-center justify-center shadow-lg">
-                  <Share2 className="w-8 h-8 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-900">Family Sharing</h1>
-                  <p className="text-gray-600 text-lg">Turn scattered photos into shared smiles</p>
-                </div>
-              </div>
-              <div className="flex items-center space-x-4">
-                <button 
-                  onClick={() => setCurrentView('settings')}
-                  className="p-3 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-xl transition-all"
-                >
-                  <Settings className="w-6 h-6" />
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Main Content */}
-        <div className="max-w-4xl mx-auto px-6 py-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* Quick Share */}
-            <div className="bg-white rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-100">
-              <div className="p-8">
-                <div className="w-20 h-20 bg-gradient-to-r from-green-500 to-emerald-600 rounded-3xl flex items-center justify-center mb-6 shadow-lg">
-                  <Share2 className="w-10 h-10 text-white" />
-                </div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-4">Quick Share</h2>
-                <p className="text-gray-600 mb-8 text-lg leading-relaxed">
-                  Connect to Google or Apple Photos for unlimited sharing, or upload directly with 10 free photos monthly.
-                </p>
-                <button
-                  onClick={() => setCurrentView('connect-photos')}
-                  className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold py-5 px-6 rounded-2xl transition-all duration-200 transform hover:scale-[1.02] text-lg shadow-lg"
-                >
-                  Share Photos Now
-                </button>
-              </div>
-            </div>
-
-            {/* Family Activity */}
-            <div className="bg-white rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-100">
-              <div className="p-8">
-                <div className="w-20 h-20 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-3xl flex items-center justify-center mb-6 shadow-lg">
-                  <Users className="w-10 h-10 text-white" />
-                </div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-4">Family Activity</h2>
-                <p className="text-gray-600 mb-8 text-lg leading-relaxed">
-                  See how your family is engaging with the photos you've shared. View hearts and responses.
-                </p>
-                <button
-                  onClick={() => setCurrentView('photo-feed')}
-                  className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-bold py-5 px-6 rounded-2xl transition-all duration-200 transform hover:scale-[1.02] text-lg shadow-lg"
-                >
-                  View Activity
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* User Type Switcher (for demo purposes) */}
-          <div className="mt-12 text-center space-y-2">
-            <button
-              onClick={() => {
-                setUserType('senior');
-                setCurrentView('senior-hub');
-              }}
-              className="block text-green-600 hover:text-green-700 font-medium text-lg underline"
-            >
-              Switch to Senior View
-            </button>
-            <button
-              onClick={() => {
-                setUserType('caregiver');
-                setCurrentView('caregiver-hub');
-              }}
-              className="block text-teal-600 hover:text-teal-700 font-medium text-lg underline"
-            >
-              Switch to Caregiver View
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (currentView === 'caregiver-hub') {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-teal-50 to-cyan-50">
-        {/* Header */}
-        <div className="bg-white shadow-sm border-b border-gray-100">
-          <div className="max-w-4xl mx-auto px-6 py-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-4">
-                <div className="w-14 h-14 bg-gradient-to-r from-teal-500 to-cyan-600 rounded-2xl flex items-center justify-center shadow-lg">
-                  <Stethoscope className="w-8 h-8 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-900">Caregiver Portal</h1>
-                  <p className="text-gray-600 text-lg">Share care moments with families</p>
-                </div>
-              </div>
-              <div className="flex items-center space-x-4">
-                <button 
-                  onClick={() => setCurrentView('settings')}
-                  className="p-3 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-xl transition-all"
-                >
-                  <Settings className="w-6 h-6" />
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Main Content */}
-        <div className="max-w-4xl mx-auto px-6 py-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* Share Visit Photos */}
-            <div className="bg-white rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-100">
-              <div className="p-8">
-                <div className="w-20 h-20 bg-gradient-to-r from-teal-500 to-cyan-600 rounded-3xl flex items-center justify-center mb-6 shadow-lg">
-                  <Camera className="w-10 h-10 text-white" />
-                </div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-4">Share Visit Photos</h2>
-                <p className="text-gray-600 mb-8 text-lg leading-relaxed">
-                  Document care visits and share updates with family members to keep them connected.
-                </p>
-                <button
-                  onClick={() => setCurrentView('connect-photos')}
-                  className="w-full bg-gradient-to-r from-teal-500 to-cyan-600 hover:from-teal-600 hover:to-cyan-700 text-white font-bold py-5 px-6 rounded-2xl transition-all duration-200 transform hover:scale-[1.02] text-lg shadow-lg"
-                >
-                  Share Care Updates
-                </button>
-              </div>
-            </div>
-
-            {/* View Family Responses */}
-            <div className="bg-white rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-100">
-              <div className="p-8">
-                <div className="w-20 h-20 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-3xl flex items-center justify-center mb-6 shadow-lg">
-                  <Heart className="w-10 h-10 text-white" />
-                </div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-4">Family Responses</h2>
-                <p className="text-gray-600 mb-8 text-lg leading-relaxed">
-                  See how families respond to your care updates and photo shares.
-                </p>
-                <button
-                  onClick={() => setCurrentView('photo-feed')}
-                  className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-bold py-5 px-6 rounded-2xl transition-all duration-200 transform hover:scale-[1.02] text-lg shadow-lg"
-                >
-                  View Responses
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* User Type Switcher (for demo purposes) */}
-          <div className="mt-12 text-center space-y-2">
-            <button
-              onClick={() => {
-                setUserType('senior');
-                setCurrentView('senior-hub');
-              }}
-              className="block text-teal-600 hover:text-teal-700 font-medium text-lg underline"
-            >
-              Switch to Senior View
-            </button>
-            <button
-              onClick={() => {
-                setUserType('family');
-                setCurrentView('family-hub');
-              }}
-              className="block text-teal-600 hover:text-teal-700 font-medium text-lg underline"
-            >
-              Switch to Family View
-            </button>
           </div>
         </div>
       </div>
@@ -614,7 +431,7 @@ function App() {
       <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-50">
         <div className="max-w-2xl mx-auto px-6 py-8">
           <button
-            onClick={() => setCurrentView(userType === 'caregiver' ? 'caregiver-hub' : userType === 'family' ? 'family-hub' : 'senior-hub')}
+            onClick={() => setCurrentView('senior-hub')}
             className="flex items-center text-gray-600 hover:text-gray-900 mb-8 transition-colors text-lg"
           >
             <ArrowLeft className="w-6 h-6 mr-3" />
@@ -714,7 +531,7 @@ function App() {
       <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-50">
         <div className="max-w-3xl mx-auto px-6 py-8">
           <button
-            onClick={() => setCurrentView(userType === 'caregiver' ? 'caregiver-hub' : userType === 'family' ? 'family-hub' : 'senior-hub')}
+            onClick={() => setCurrentView('senior-hub')}
             className="flex items-center text-gray-600 hover:text-gray-900 mb-8 transition-colors text-lg"
           >
             <ArrowLeft className="w-6 h-6 mr-3" />
@@ -739,12 +556,12 @@ function App() {
                     <div className="flex items-center justify-between mb-6">
                       <div className="flex items-center space-x-4">
                         <div className={`w-16 h-16 rounded-full flex items-center justify-center shadow-lg ${
-                          photo.senderType === 'caregiver' 
-                            ? 'bg-gradient-to-r from-teal-500 to-cyan-600' 
+                          photo.source === 'caregiver' 
+                            ? 'bg-gradient-to-r from-green-500 to-emerald-600' 
                             : 'bg-gradient-to-r from-blue-500 to-indigo-600'
                         }`}>
-                          {photo.senderType === 'caregiver' ? (
-                            <Stethoscope className="w-8 h-8 text-white" />
+                          {photo.source === 'caregiver' ? (
+                            <UserCheck className="w-8 h-8 text-white" />
                           ) : (
                             <span className="text-white font-bold text-xl">
                               {photo.sender[0]}
@@ -754,13 +571,11 @@ function App() {
                         <div>
                           <div className="flex items-center space-x-2">
                             <div className="font-bold text-gray-900 text-xl">{photo.sender}</div>
-                            <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                              photo.senderType === 'caregiver' 
-                                ? 'bg-teal-100 text-teal-800' 
-                                : 'bg-blue-100 text-blue-800'
-                            }`}>
-                              {photo.senderType === 'caregiver' ? 'Caregiver' : 'Family'}
-                            </span>
+                            {photo.source === 'caregiver' && (
+                              <span className="bg-green-100 text-green-800 text-xs font-bold px-2 py-1 rounded-full">
+                                Caregiver Visit
+                              </span>
+                            )}
                           </div>
                           <div className="text-gray-500 text-lg">{formatTimeAgo(photo.timestamp)}</div>
                         </div>
@@ -789,16 +604,21 @@ function App() {
                     </div>
                     
                     {photo.note && (
-                      <div className={`rounded-2xl p-6 mb-6 border ${
-                        photo.senderType === 'caregiver' 
-                          ? 'bg-teal-50 border-teal-100' 
-                          : 'bg-amber-50 border-amber-100'
-                      }`}>
+                      <div className="bg-amber-50 rounded-2xl p-6 mb-6 border border-amber-100">
                         <div className="flex items-start space-x-4">
-                          <MessageCircle className={`w-6 h-6 mt-1 flex-shrink-0 ${
-                            photo.senderType === 'caregiver' ? 'text-teal-600' : 'text-amber-600'
-                          }`} />
+                          <MessageCircle className="w-6 h-6 text-amber-600 mt-1 flex-shrink-0" />
                           <p className="text-gray-700 text-lg leading-relaxed">{photo.note}</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {photo.seniorResponse && (
+                      <div className="bg-blue-50 rounded-2xl p-6 mb-6 border border-blue-100">
+                        <div className="flex items-start space-x-4">
+                          <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
+                            <span className="text-white text-xs font-bold">You</span>
+                          </div>
+                          <p className="text-blue-800 text-lg leading-relaxed font-medium">{photo.seniorResponse}</p>
                         </div>
                       </div>
                     )}
@@ -815,6 +635,23 @@ function App() {
                         <Heart className={`w-7 h-7 ${photo.liked ? 'fill-current' : ''}`} />
                         <span>{photo.liked ? 'Loved!' : 'Love This'}</span>
                       </button>
+
+                      {!photo.seniorResponse && (
+                        <div className="flex items-center space-x-3">
+                          <button
+                            onClick={() => handleSeniorResponse(photo.id, 'Thank you!')}
+                            className="px-6 py-3 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-xl font-medium transition-colors border border-blue-200"
+                          >
+                            Thank you!
+                          </button>
+                          <button
+                            onClick={() => handleSeniorResponse(photo.id, 'Thinking of you!')}
+                            className="px-6 py-3 bg-purple-50 text-purple-600 hover:bg-purple-100 rounded-xl font-medium transition-colors border border-purple-200"
+                          >
+                            Thinking of you!
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -833,7 +670,7 @@ function App() {
       <div className="min-h-screen bg-black">
         <div className="relative">
           <button
-            onClick={() => setCurrentView('photo-feed')}
+            onClick={() => setCurrentView('senior-hub')}
             className="absolute top-6 left-6 z-10 flex items-center text-white hover:text-gray-300 transition-colors text-lg bg-black/50 px-6 py-3 rounded-2xl backdrop-blur-sm"
           >
             <ArrowLeft className="w-6 h-6 mr-2" />
@@ -851,12 +688,12 @@ function App() {
               <div className="bg-white rounded-2xl p-8 mt-6 shadow-xl">
                 <div className="flex items-center space-x-4 mb-6">
                   <div className={`w-14 h-14 rounded-full flex items-center justify-center shadow-lg ${
-                    selectedPhoto.senderType === 'caregiver' 
-                      ? 'bg-gradient-to-r from-teal-500 to-cyan-600' 
+                    selectedPhoto.source === 'caregiver' 
+                      ? 'bg-gradient-to-r from-green-500 to-emerald-600' 
                       : 'bg-gradient-to-r from-blue-500 to-indigo-600'
                   }`}>
-                    {selectedPhoto.senderType === 'caregiver' ? (
-                      <Stethoscope className="w-7 h-7 text-white" />
+                    {selectedPhoto.source === 'caregiver' ? (
+                      <UserCheck className="w-7 h-7 text-white" />
                     ) : (
                       <span className="text-white font-bold text-lg">
                         {selectedPhoto.sender[0]}
@@ -866,39 +703,69 @@ function App() {
                   <div>
                     <div className="flex items-center space-x-2">
                       <div className="font-bold text-gray-900 text-xl">{selectedPhoto.sender}</div>
-                      <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                        selectedPhoto.senderType === 'caregiver' 
-                          ? 'bg-teal-100 text-teal-800' 
-                          : 'bg-blue-100 text-blue-800'
-                      }`}>
-                        {selectedPhoto.senderType === 'caregiver' ? 'Caregiver' : 'Family'}
-                      </span>
+                      {selectedPhoto.source === 'caregiver' && (
+                        <span className="bg-green-100 text-green-800 text-xs font-bold px-2 py-1 rounded-full">
+                          Caregiver Visit
+                        </span>
+                      )}
                     </div>
                     <div className="text-gray-500 text-lg">{formatTimeAgo(selectedPhoto.timestamp)}</div>
                   </div>
                 </div>
                 
                 {selectedPhoto.note && (
-                  <div className={`rounded-2xl p-6 mb-6 border ${
-                    selectedPhoto.senderType === 'caregiver' 
-                      ? 'bg-teal-50 border-teal-100' 
-                      : 'bg-amber-50 border-amber-100'
-                  }`}>
+                  <div className="bg-amber-50 rounded-2xl p-6 mb-6 border border-amber-100">
                     <p className="text-gray-700 text-lg leading-relaxed">{selectedPhoto.note}</p>
                   </div>
                 )}
+
+                {selectedPhoto.seniorResponse && (
+                  <div className="bg-blue-50 rounded-2xl p-6 mb-6 border border-blue-100">
+                    <div className="flex items-start space-x-4">
+                      <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center flex-shrink-0">
+                        <span className="text-white text-xs font-bold">You</span>
+                      </div>
+                      <p className="text-blue-800 text-lg leading-relaxed font-medium">{selectedPhoto.seniorResponse}</p>
+                    </div>
+                  </div>
+                )}
                 
-                <button
-                  onClick={() => likePhoto(selectedPhoto.id)}
-                  className={`flex items-center space-x-4 px-8 py-4 rounded-2xl transition-all duration-200 text-lg font-bold shadow-lg ${
-                    selectedPhoto.liked
-                      ? 'bg-red-50 text-red-600 hover:bg-red-100 border-2 border-red-200'
-                      : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border-2 border-gray-200'
-                  }`}
-                >
-                  <Heart className={`w-7 h-7 ${selectedPhoto.liked ? 'fill-current' : ''}`} />
-                  <span>{selectedPhoto.liked ? 'Loved!' : 'Love This'}</span>
-                </button>
+                <div className="flex items-center space-x-6 flex-wrap gap-4">
+                  <button
+                    onClick={() => likePhoto(selectedPhoto.id)}
+                    className={`flex items-center space-x-4 px-8 py-4 rounded-2xl transition-all duration-200 text-lg font-bold shadow-lg ${
+                      selectedPhoto.liked
+                        ? 'bg-red-50 text-red-600 hover:bg-red-100 border-2 border-red-200'
+                        : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border-2 border-gray-200'
+                    }`}
+                  >
+                    <Heart className={`w-7 h-7 ${selectedPhoto.liked ? 'fill-current' : ''}`} />
+                    <span>{selectedPhoto.liked ? 'Loved!' : 'Love This'}</span>
+                  </button>
+
+                  {!selectedPhoto.seniorResponse && (
+                    <>
+                      <button
+                        onClick={() => handleSeniorResponse(selectedPhoto.id, 'Thank you!')}
+                        className="px-8 py-4 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-2xl font-bold text-lg transition-colors border-2 border-blue-200 shadow-lg"
+                      >
+                        Thank you!
+                      </button>
+                      <button
+                        onClick={() => handleSeniorResponse(selectedPhoto.id, 'Love this!')}
+                        className="px-8 py-4 bg-green-50 text-green-600 hover:bg-green-100 rounded-2xl font-bold text-lg transition-colors border-2 border-green-200 shadow-lg"
+                      >
+                        Love this!
+                      </button>
+                      <button
+                        onClick={() => handleSeniorResponse(selectedPhoto.id, 'Thinking of you!')}
+                        className="px-8 py-4 bg-purple-50 text-purple-600 hover:bg-purple-100 rounded-2xl font-bold text-lg transition-colors border-2 border-purple-200 shadow-lg"
+                      >
+                        Thinking of you!
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -915,7 +782,7 @@ function App() {
       <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-50">
         <div className="max-w-3xl mx-auto px-6 py-8">
           <button
-            onClick={() => setCurrentView(userType === 'caregiver' ? 'caregiver-hub' : userType === 'family' ? 'family-hub' : 'senior-hub')}
+            onClick={() => setCurrentView('senior-hub')}
             className="flex items-center text-gray-600 hover:text-gray-900 mb-8 transition-colors text-lg"
           >
             <ArrowLeft className="w-6 h-6 mr-3" />
@@ -976,10 +843,7 @@ function App() {
                 <textarea
                   value={shareNote}
                   onChange={(e) => setShareNote(e.target.value)}
-                  placeholder={userType === 'caregiver' 
-                    ? "Add a note about the visit or care update... (optional)"
-                    : "Add a personal note for your family... (optional)"
-                  }
+                  placeholder="Add a personal note for your family... (optional)"
                   className="w-full p-6 border-2 border-gray-200 rounded-2xl focus:ring-2 focus:ring-orange-400 focus:border-transparent resize-none h-32 text-lg"
                   rows={4}
                 />
@@ -1014,12 +878,129 @@ function App() {
     );
   }
 
+  if (currentView === 'family-hub') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-50">
+        {/* Header */}
+        <div className="bg-white shadow-sm border-b border-gray-100">
+          <div className="max-w-4xl mx-auto px-6 py-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className="w-14 h-14 bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl flex items-center justify-center shadow-lg">
+                  <Share2 className="w-8 h-8 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900">Family Sharing</h1>
+                  <p className="text-gray-600 text-lg">Turn scattered photos into shared smiles</p>
+                </div>
+              </div>
+              <div className="flex items-center space-x-4">
+                <button 
+                  onClick={() => setCurrentView('settings')}
+                  className="p-3 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-xl transition-all"
+                >
+                  <Settings className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Main Content */}
+        <div className="max-w-4xl mx-auto px-6 py-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Quick Share */}
+            <div className="bg-white rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-100">
+              <div className="p-8">
+                <div className="w-20 h-20 bg-gradient-to-r from-green-500 to-emerald-600 rounded-3xl flex items-center justify-center mb-6 shadow-lg">
+                  <Share2 className="w-10 h-10 text-white" />
+                </div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-4">Quick Share</h2>
+                <p className="text-gray-600 mb-8 text-lg leading-relaxed">
+                  Connect to Google or Apple Photos for unlimited sharing, or upload directly with 10 free photos monthly.
+                </p>
+                <button
+                  onClick={() => setCurrentView('connect-photos')}
+                  className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold py-5 px-6 rounded-2xl transition-all duration-200 transform hover:scale-[1.02] text-lg shadow-lg"
+                >
+                  Share Photos Now
+                </button>
+              </div>
+            </div>
+
+            {/* Family Activity */}
+            <div className="bg-white rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-300 overflow-hidden border border-gray-100">
+              <div className="p-8">
+                <div className="w-20 h-20 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-3xl flex items-center justify-center mb-6 shadow-lg">
+                  <Users className="w-10 h-10 text-white" />
+                </div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-4">Family Activity</h2>
+                <p className="text-gray-600 mb-8 text-lg leading-relaxed">
+                  See how your family is engaging with the photos you've shared. View hearts and responses.
+                </p>
+                <button
+                  onClick={() => setCurrentView('photo-feed')}
+                  className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white font-bold py-5 px-6 rounded-2xl transition-all duration-200 transform hover:scale-[1.02] text-lg shadow-lg"
+                >
+                  View Activity
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Connection Benefits */}
+          <div className="mt-12 bg-white/80 backdrop-blur-sm rounded-3xl p-8 border border-gray-100">
+            <div className="text-center">
+              <h3 className="text-xl font-bold text-gray-900 mb-6">Choose Your Sharing Style</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="text-center p-6 bg-red-50 rounded-2xl border border-red-100">
+                  <div className="w-12 h-12 bg-red-500 rounded-xl flex items-center justify-center mx-auto mb-4">
+                    <Link className="w-6 h-6 text-white" />
+                  </div>
+                  <div className="font-bold text-red-800 mb-2">Google Photos</div>
+                  <div className="text-red-600">Unlimited sharing</div>
+                </div>
+                <div className="text-center p-6 bg-gray-50 rounded-2xl border border-gray-200">
+                  <div className="w-12 h-12 bg-gray-800 rounded-xl flex items-center justify-center mx-auto mb-4">
+                    <Link className="w-6 h-6 text-white" />
+                  </div>
+                  <div className="font-bold text-gray-800 mb-2">Apple Photos</div>
+                  <div className="text-gray-600">Unlimited sharing</div>
+                </div>
+                <div className="text-center p-6 bg-orange-50 rounded-2xl border border-orange-100">
+                  <div className="w-12 h-12 bg-orange-500 rounded-xl flex items-center justify-center mx-auto mb-4">
+                    <Upload className="w-6 h-6 text-white" />
+                  </div>
+                  <div className="font-bold text-orange-800 mb-2">Direct Upload</div>
+                  <div className="text-orange-600">10 photos/month free</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* User Type Switcher (for demo purposes) */}
+          <div className="mt-12 text-center">
+            <button
+              onClick={() => {
+                setUserType('senior');
+                setCurrentView('senior-hub');
+              }}
+              className="text-green-600 hover:text-green-700 font-medium text-lg underline"
+            >
+              Switch to Senior View
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (currentView === 'settings') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-50">
         <div className="max-w-2xl mx-auto px-6 py-8">
           <button
-            onClick={() => setCurrentView(userType === 'caregiver' ? 'caregiver-hub' : userType === 'family' ? 'family-hub' : 'senior-hub')}
+            onClick={() => setCurrentView(userType === 'senior' ? 'senior-hub' : 'family-hub')}
             className="flex items-center text-gray-600 hover:text-gray-900 mb-8 transition-colors text-lg"
           >
             <ArrowLeft className="w-6 h-6 mr-3" />
@@ -1089,7 +1070,7 @@ function App() {
                     setConnectionType('none');
                     setPhotos([]);
                     setSelectedPhotos([]);
-                    setCurrentView(userType === 'caregiver' ? 'caregiver-hub' : userType === 'family' ? 'family-hub' : 'senior-hub');
+                    setCurrentView(userType === 'senior' ? 'senior-hub' : 'family-hub');
                   }}
                   className="w-full flex items-center justify-center space-x-3 bg-red-50 hover:bg-red-100 text-red-600 py-4 px-6 rounded-2xl transition-colors text-lg font-bold border-2 border-red-200"
                 >
