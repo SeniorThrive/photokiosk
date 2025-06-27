@@ -128,46 +128,48 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+    <div className="min-h-screen bg-white">
       {/* Header */}
-      <header className="bg-white/80 backdrop-blur-md shadow-sm border-b border-slate-200/60 sticky top-0 z-40">
-        <div className="max-w-4xl mx-auto px-6 py-5">
+      <header className="bg-white/95 backdrop-blur-xl border-b border-gray-200 sticky top-0 z-50">
+        <div className="max-w-2xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="p-2 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl shadow-lg">
-                <Camera className="h-7 w-7 text-white" />
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center">
+                <Camera className="h-4 w-4 text-white" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Family Photos</h1>
-                <p className="text-sm text-slate-500 mt-0.5">Stay connected with your loved ones</p>
+                <h1 className="text-xl font-semibold text-black tracking-tight">Family Photos</h1>
+                <p className="text-sm text-gray-500">Stay connected with your loved ones</p>
               </div>
             </div>
             <div className="flex items-center space-x-4">
-              <div className="flex bg-slate-100/80 rounded-xl p-1.5 shadow-inner">
+              <div className="flex bg-gray-100 rounded-lg p-1">
                 <button
                   onClick={() => setCurrentView('family')}
-                  className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${
+                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
                     currentView === 'family'
-                      ? 'bg-white text-blue-600 shadow-md transform scale-105'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+                      ? 'bg-white text-black shadow-sm'
+                      : 'text-gray-600 hover:text-black'
                   }`}
                 >
-                  Family View
+                  Family
                 </button>
                 <button
                   onClick={() => setCurrentView('caregiver')}
-                  className={`px-5 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${
+                  className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
                     currentView === 'caregiver'
-                      ? 'bg-white text-blue-600 shadow-md transform scale-105'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-white/50'
+                      ? 'bg-white text-black shadow-sm'
+                      : 'text-gray-600 hover:text-black'
                   }`}
                 >
-                  Caregiver View
+                  Caregiver
                 </button>
               </div>
               <div className="relative">
-                <Bell className="h-6 w-6 text-slate-600 hover:text-slate-900 cursor-pointer transition-colors" />
-                <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                <Bell className="h-5 w-5 text-gray-600" />
+                {photos.some(p => p.hasNewActivity) && (
+                  <div className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"></div>
+                )}
               </div>
             </div>
           </div>
@@ -175,128 +177,115 @@ function App() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-4xl mx-auto px-6 py-8">
-        <div className="space-y-8">
+      <main className="max-w-2xl mx-auto px-4 py-8">
+        <div className="space-y-12">
           {photos.map((photo) => (
-            <article key={photo.id} className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-lg border border-slate-200/50 overflow-hidden hover:shadow-xl transition-all duration-300">
+            <article key={photo.id} className="bg-white">
               {/* Photo Header */}
-              <div className="p-6 border-b border-slate-100">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 bg-gradient-to-br from-slate-200 to-slate-300 rounded-full flex items-center justify-center">
-                        <User className="h-5 w-5 text-slate-600" />
-                      </div>
-                      <div>
-                        <div className="flex items-center space-x-2">
-                          <span className="font-semibold text-slate-900">{photo.uploadedBy}</span>
-                          {photo.isCaregiver && (
-                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700 border border-blue-200">
-                              <Clock className="h-3 w-3 mr-1" />
-                              Caregiver Visit
-                            </span>
-                          )}
-                          {photo.hasNewActivity && (
-                            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700 border border-red-200 animate-pulse">
-                              <Bell className="h-3 w-3 mr-1" />
-                              New Activity
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-sm text-slate-500 mt-0.5">{photo.timestamp}</p>
-                      </div>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center">
+                    <User className="h-4 w-4 text-gray-600" />
+                  </div>
+                  <div>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm font-medium text-black">{photo.uploadedBy}</span>
+                      {photo.isCaregiver && (
+                        <span className="text-xs text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
+                          Caregiver
+                        </span>
+                      )}
+                      {photo.hasNewActivity && (
+                        <div className="w-1.5 h-1.5 bg-red-500 rounded-full"></div>
+                      )}
                     </div>
+                    <p className="text-xs text-gray-500">{photo.timestamp}</p>
                   </div>
                 </div>
               </div>
 
               {/* Photo */}
-              <div className="relative group">
+              <div className="mb-4">
                 <img
                   src={photo.url}
                   alt={photo.caption}
-                  className="w-full h-96 object-cover cursor-pointer transition-transform duration-300 group-hover:scale-[1.02]"
+                  className="w-full rounded-lg cursor-pointer"
                   onClick={() => setSelectedPhoto(photo)}
                 />
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-300"></div>
               </div>
 
-              {/* Photo Footer */}
-              <div className="p-6">
-                <p className="text-slate-900 text-lg leading-relaxed mb-5">{photo.caption}</p>
-                
-                {/* Actions */}
-                <div className="flex items-center space-x-6 mb-6">
-                  <button
-                    onClick={() => handleLike(photo.id)}
-                    className="flex items-center space-x-2 text-slate-600 hover:text-red-500 transition-colors duration-200 group"
-                  >
-                    <Heart className="h-6 w-6 group-hover:scale-110 transition-transform" />
-                    <span className="font-medium">{photo.likes}</span>
-                  </button>
-                  <button className="flex items-center space-x-2 text-slate-600 hover:text-blue-500 transition-colors duration-200 group">
-                    <MessageCircle className="h-6 w-6 group-hover:scale-110 transition-transform" />
-                    <span className="font-medium">{photo.comments.length}</span>
-                  </button>
-                </div>
+              {/* Actions */}
+              <div className="flex items-center space-x-4 mb-3">
+                <button
+                  onClick={() => handleLike(photo.id)}
+                  className="flex items-center space-x-1 text-gray-600 hover:text-black transition-colors"
+                >
+                  <Heart className="h-5 w-5" />
+                  <span className="text-sm font-medium">{photo.likes}</span>
+                </button>
+                <button className="flex items-center space-x-1 text-gray-600 hover:text-black transition-colors">
+                  <MessageCircle className="h-5 w-5" />
+                  <span className="text-sm font-medium">{photo.comments.length}</span>
+                </button>
+              </div>
 
-                {/* Comments */}
-                {photo.comments.length > 0 && (
-                  <div className="space-y-4 mb-6">
-                    {photo.comments.map((comment) => (
-                      <div key={comment.id} className="bg-slate-50/80 rounded-xl p-4 border border-slate-100">
-                        <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center space-x-2">
-                            <span className="font-semibold text-slate-900">{comment.author}</span>
-                            {comment.isCaregiver && (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700 border border-blue-200">
-                                Caregiver
-                              </span>
-                            )}
-                          </div>
-                          <span className="text-sm text-slate-500">{comment.timestamp}</span>
-                        </div>
-                        <p className="text-slate-700 leading-relaxed">{comment.message}</p>
+              {/* Caption */}
+              <div className="mb-4">
+                <p className="text-sm text-black leading-relaxed">{photo.caption}</p>
+              </div>
+
+              {/* Comments */}
+              {photo.comments.length > 0 && (
+                <div className="space-y-3 mb-4">
+                  {photo.comments.map((comment) => (
+                    <div key={comment.id} className="text-sm">
+                      <div className="flex items-center space-x-2 mb-1">
+                        <span className="font-medium text-black">{comment.author}</span>
+                        {comment.isCaregiver && (
+                          <span className="text-xs text-blue-600">Caregiver</span>
+                        )}
+                        <span className="text-xs text-gray-500">{comment.timestamp}</span>
                       </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* Quick Reply Buttons */}
-                <div className="flex flex-wrap gap-2 mb-6">
-                  {QUICK_REPLIES.map((reply, index) => (
-                    <button
-                      key={index}
-                      onClick={() => handleQuickReply(photo.id, reply)}
-                      className="px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-full text-sm text-slate-700 transition-all duration-200 hover:scale-105 hover:shadow-md border border-slate-200"
-                    >
-                      {reply}
-                    </button>
+                      <p className="text-gray-700 leading-relaxed">{comment.message}</p>
+                    </div>
                   ))}
                 </div>
+              )}
 
-                {/* Comment Input */}
-                <div className="flex space-x-3">
-                  <input
-                    type="text"
-                    value={newComment}
-                    onChange={(e) => setNewComment(e.target.value)}
-                    placeholder="Write a heartfelt comment..."
-                    className="flex-1 px-5 py-3 border border-slate-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white/80 backdrop-blur-sm transition-all duration-200"
-                    onKeyPress={(e) => {
-                      if (e.key === 'Enter' && newComment.trim()) {
-                        handleComment(photo.id, newComment);
-                      }
-                    }}
-                  />
+              {/* Quick Replies */}
+              <div className="flex flex-wrap gap-2 mb-4">
+                {QUICK_REPLIES.map((reply, index) => (
                   <button
-                    onClick={() => newComment.trim() && handleComment(photo.id, newComment)}
-                    disabled={!newComment.trim()}
-                    className="px-5 py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-full hover:from-blue-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 hover:scale-105 hover:shadow-lg disabled:hover:scale-100 disabled:hover:shadow-none"
+                    key={index}
+                    onClick={() => handleQuickReply(photo.id, reply)}
+                    className="text-xs text-gray-600 bg-gray-100 hover:bg-gray-200 px-3 py-1.5 rounded-full transition-colors"
                   >
-                    <Send className="h-5 w-5" />
+                    {reply}
                   </button>
-                </div>
+                ))}
+              </div>
+
+              {/* Comment Input */}
+              <div className="flex space-x-3">
+                <input
+                  type="text"
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  placeholder="Add a comment..."
+                  className="flex-1 text-sm border-0 border-b border-gray-200 focus:border-black focus:outline-none pb-2 bg-transparent"
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter' && newComment.trim()) {
+                      handleComment(photo.id, newComment);
+                    }
+                  }}
+                />
+                <button
+                  onClick={() => newComment.trim() && handleComment(photo.id, newComment)}
+                  disabled={!newComment.trim()}
+                  className="text-blue-600 disabled:text-gray-400 text-sm font-medium"
+                >
+                  Post
+                </button>
               </div>
             </article>
           ))}
@@ -305,24 +294,22 @@ function App() {
 
       {/* Photo Modal */}
       {selectedPhoto && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-4xl max-h-[90vh] overflow-hidden shadow-2xl">
-            <div className="p-6 border-b border-slate-200">
-              <div className="flex items-center justify-between">
-                <h3 className="text-xl font-semibold text-slate-900">{selectedPhoto.caption}</h3>
-                <button
-                  onClick={() => setSelectedPhoto(null)}
-                  className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-full transition-colors"
-                >
-                  <X className="h-6 w-6" />
-                </button>
-              </div>
+        <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-4xl max-h-[90vh] overflow-hidden">
+            <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+              <h3 className="font-medium text-black">{selectedPhoto.caption}</h3>
+              <button
+                onClick={() => setSelectedPhoto(null)}
+                className="text-gray-500 hover:text-black"
+              >
+                <X className="h-5 w-5" />
+              </button>
             </div>
-            <div className="overflow-auto max-h-[calc(90vh-120px)]">
+            <div className="overflow-auto max-h-[calc(90vh-80px)]">
               <img
                 src={selectedPhoto.url}
                 alt={selectedPhoto.caption}
-                className="w-full h-auto object-contain"
+                className="w-full h-auto"
               />
             </div>
           </div>
